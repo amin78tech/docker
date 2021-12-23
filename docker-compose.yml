@@ -1,0 +1,52 @@
+version: '3'
+services:
+
+  # Backend
+  maktab-app:
+    container_name: maktab-app
+    #image: php:7.4-cli
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+      args:
+        PHP_OPCACHE_VALIDATE_TIMESTAMPS: 1
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - maktab-net
+      
+  # Nginx
+  maktab-nginx:
+    container_name: maktab-nginx
+    image: nginx:alpine
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/letsencrypt/certificate:/usr/share/nginx/certificate
+    ports:
+      - 8182:80
+    depends_on: 
+      - maktab-app
+    networks:
+      - maktab-net      
+  
+  # mysql
+  maktab-mysql:
+    container_name: maktab-mysql
+    image: mysql:8
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    ports:
+      - 33060:3306    
+    environment:
+      MYSQL_ROOT_PASSWORD: toor
+    networks:
+      - maktab-net
+      
+networks:
+  maktab-net:
+    driver: bridge      
